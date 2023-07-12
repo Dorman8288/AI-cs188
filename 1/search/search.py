@@ -103,7 +103,6 @@ from typing import Dict, Tuple
 
 def dfsRecursive(state, visited: Dict[Tuple[int, int], bool], path, problem):
     visited[state] = 1
-    print(state)
     if problem.isGoalState(state):
         return True
     Successors = problem.getSuccessors(state)
@@ -119,7 +118,36 @@ def dfsRecursive(state, visited: Dict[Tuple[int, int], bool], path, problem):
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    startState = problem.getStartState()
+    q = Queue()
+    visited = Counter()
+    q.push(startState)
+    parents = {startState: "start"}
+    end = None
+    while not q.isEmpty():
+        currentState = q.pop()
+        visited[currentState] = 1
+        if problem.isGoalState(currentState):
+            end = currentState
+            break
+        successors = problem.getSuccessors(currentState)
+        for successor in successors:
+            nextState = successor[0]
+            action = successor[1]
+            if visited[nextState] == 0:
+                q.push(nextState)
+                parents[nextState] = action
+    return AssemblePath(end, parents)
+
+def AssemblePath(end, parents):
+    path = []
+    curr = end
+    while parents[curr] != 'start':
+        action = parents[curr]
+        path.append(action)
+        curr = Actions.getSuccessor(curr, Actions.reverseDirection(action))
+    path.reverse()
+    return path
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
