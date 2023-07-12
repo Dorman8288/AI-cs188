@@ -18,6 +18,8 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
+from util import *
+from game import *
 
 class SearchProblem:
     """
@@ -87,7 +89,32 @@ def depthFirstSearch(problem: SearchProblem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    
+    StartState = problem.getStartState()
+    visited = Counter()
+    visited[StartState] = 1
+    path = Stack()
+    dfsRecursive(StartState, visited, path, problem)
+    result = path.list
+    result.reverse()
+    return result
+
+from typing import Dict, Tuple
+
+def dfsRecursive(state, visited: Dict[Tuple[int, int], bool], path, problem):
+    visited[state] = 1
+    print(state)
+    if problem.isGoalState(state):
+        return True
+    Successors = problem.getSuccessors(state)
+    for successor in Successors:
+        nextState = successor[0]
+        action = successor[1]
+        if visited[nextState] == 0 and dfsRecursive(nextState, visited, path, problem):
+            path.push(action)
+            return True
+    return False
+
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
