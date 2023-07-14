@@ -63,7 +63,7 @@ class EightPuzzleState:
         """
           Checks to see if the puzzle is in its goal state.
 
-            -------------
+             -------------
             |   | 1 | 2 |
             -------------
             | 3 | 4 | 5 |

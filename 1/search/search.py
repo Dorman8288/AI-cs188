@@ -122,8 +122,47 @@ def breadthFirstSearch(problem: SearchProblem):
     q = Queue()
     visited = Counter()
     q.push(startState)
-    parents = {startState: "start"}
+    parents = {startState: ["start", startState]}
+    visited[startState] = 1
     end = None
+    while not q.isEmpty():
+        currentState = q.pop()
+        if problem.isGoalState(currentState):
+            end = currentState
+            break
+        successors = problem.getSuccessors(currentState)
+        for successor in successors:
+            nextState = successor[0]
+            action = successor[1]
+            if visited[nextState] == 0:
+                q.push(nextState)
+                parents[nextState] = [action, currentState]
+                visited[nextState] = 1
+    return AssemblePath(end, parents)
+
+def AssemblePath(end, parents):
+    path = []
+    curr = end
+    while parents[curr][0] != 'start':
+        action = parents[curr][0]
+        curr = parents[curr][1]
+        path.append(action)
+    path.reverse()
+    return path
+
+def uniformCostSearch(problem: SearchProblem):
+    """Search the node of least total cost first."""
+    "*** YOUR CODE HERE ***"
+    startState = problem.getStartState()
+    q = PriorityQueue()
+    q.push(startState, 0)
+    visited = Counter()
+    visited[startState] = 1
+    currentCost = Counter()
+    currentCost[startState] = 0
+    parents = {startState: ["start", startState]}
+    end = None
+    inifinity = sys.float_info.max
     while not q.isEmpty():
         currentState = q.pop()
         visited[currentState] = 1
@@ -134,25 +173,15 @@ def breadthFirstSearch(problem: SearchProblem):
         for successor in successors:
             nextState = successor[0]
             action = successor[1]
-            if visited[nextState] == 0:
-                q.push(nextState)
-                parents[nextState] = action
+            cost = successor[2]
+            if not currentCost.__contains__(nextState):
+                currentCost[nextState] = inifinity
+                q.push(nextState, inifinity)
+            if visited[nextState] == 0 and (currentCost[nextState] == inifinity or currentCost[currentState] + cost < currentCost[nextState]):
+                parents[nextState] = [action, currentState]
+                currentCost[nextState] = currentCost[currentState] + cost
+                q.update(nextState, currentCost[nextState])
     return AssemblePath(end, parents)
-
-def AssemblePath(end, parents):
-    path = []
-    curr = end
-    while parents[curr] != 'start':
-        action = parents[curr]
-        path.append(action)
-        curr = Actions.getSuccessor(curr, Actions.reverseDirection(action))
-    path.reverse()
-    return path
-
-def uniformCostSearch(problem: SearchProblem):
-    """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
 
 def nullHeuristic(state, problem=None):
     """
