@@ -436,7 +436,9 @@ class FoodSearchProblem:
         self.startingGameState = startingGameState
         self._expanded = 0 # DO NOT CHANGE
         self.heuristicInfo = {} # A dictionary for the heuristic to store information
-
+        self.heuristicInfo["FoodMatrix"] = GetFoodMatrix(startingGameState.getFood().asList(), self)
+        self.heuristicInfo["included"] = list(range(0, startingGameState.getNumFood()))
+        self.foods = startingGameState.getFood().asList()
     def getStartState(self):
         return self.start
 
@@ -506,8 +508,83 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
+    foods = foodGrid.asList()
     "*** YOUR CODE HERE ***"
-    return 0
+    adjMatrix = updateAdjMatrix(foods, problem)
+    if len(foods) == 0:
+        return 0
+    MSTCost = primMST(adjMatrix, len(problem.foods))
+    minimum = GetBestDistance(position, foods, problem.startingGameState)
+    return minimum + MSTCost
+    
+def GetBestDistance(pivot, points, gamestate):
+    minimum = maxsize
+    for point in points: 
+        min(minimum, manhattanDistance(pivot, point))
+    return minimum
+
+from sys import maxsize
+INT_MAX = maxsize
+
+def isValidEdge(u, v, inMST):
+    if u == v:
+        return False
+    if inMST[u] == False and inMST[v] == False:
+        return False
+    elif inMST[u] == True and inMST[v] == True:
+        return False
+    return True
+ 
+def primMST(cost, V):
+    print(V)
+    inMST = [False] * V
+    inMST[0] = True
+    edge_count = 0
+    mincost = 0
+    while edge_count < V - 1:
+        minn = INT_MAX
+        a = -1
+        b = -1
+        for i in range(V):
+            for j in range(V):
+                if cost[i][j] < minn:
+                    if isValidEdge(i, j, inMST):
+                        minn = cost[i][j]
+                        a = i
+                        b = j
+        if a != -1 and b != -1:
+            edge_count += 1
+            mincost += minn
+            inMST[b] = inMST[a] = True
+    return mincost
+
+def GetFoodMatrix(foods, problem):
+    n = len(foods)
+    matrix = []
+    for i in range(0, n):
+        matrix.append([])
+        for j in range(0, n):
+            matrix[i].append(j)
+    for i in range(0, n):
+        for j in range(i, n):
+            matrix[i][j] = manhattanDistance(foods[i], foods[j])
+            matrix[j][i] = manhattanDistance(foods[i], foods[j])
+    return matrix
+
+def updateAdjMatrix(foods, problem: FoodSearchProblem):
+    foodsIncluded = [] 
+    for index in problem.heuristicInfo["included"]:
+        foodsIncluded.append(problem.foods[index])
+    matrix = problem.heuristicInfo["FoodMatrix"]
+    for food in foodsIncluded:
+        if food not in foods:
+            index = problem.foods.index(food)
+            problem.heuristicInfo["included"].remove(index)
+            for i in range(len(matrix)):
+                matrix[i][index] = 0
+                matrix[index][i] = 0
+    problem.heuristicInfo["foodMatrix"] = matrix
+    return matrix
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -538,7 +615,8 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        from search import breadthFirstSearch
+        return breadthFirstSearch(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -574,7 +652,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return (x, y) in self.food.asList()
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:
     """
