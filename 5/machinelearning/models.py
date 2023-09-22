@@ -148,9 +148,9 @@ class DigitClassificationModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-        self.batch_size = 200
-        self.learningRate = -0.05
-        self.depths = [784, 20, 30, 20, 10]
+        self.batch_size = 100
+        self.learningRate = -0.4
+        self.depths = [784, 200, 200, 200, 10]
         self.Weights = []
         for i in range(1, len(self.depths)):
             self.Weights.append(nn.Parameter(self.depths[i - 1], self.depths[i]))
@@ -211,13 +211,13 @@ class DigitClassificationModel(object):
         for weight in self.Weights:
             parameters.append(weight)
         accuracy = 0
-        while accuracy < 98:
+        while accuracy < 97:
             for x, y in dataset.iterate_once(self.batch_size):
                 loss = self.get_loss(x, y)
                 Gradient = nn.gradients(loss, parameters)
-                accuracy = dataset.get_validation_accuracy()
                 for i in range(len(parameters)):
                     parameters[i].update(Gradient[i], self.learningRate)
+            accuracy = dataset.get_validation_accuracy()
 
 class LanguageIDModel(object):
     """
@@ -237,6 +237,33 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.batch_size = 200
+        self.learningRate = -0.2
+        self.HiddenLayerSize = 500
+
+
+        self.InitialDepths = [self.num_chars, 200, self.HiddenLayerSize]
+        self.InitialWeights = []
+        for i in range(1, len(self.InitialDepths)):
+            self.InitialWeights.append(nn.Parameter(self.InitialDepths[i - 1], self.InitialDepths[i]))
+        self.initialBias = [nn.Parameter(1, depth) for depth in self.InitialDepths]
+        self.initialBias.remove(self.initialBias[0])
+
+
+        self.HiddenWeights = []
+        for i in range(1, len(self.InitialDepths)):
+            self.HiddenWeights.append(nn.Parameter(self.HiddenLayerSize, self.InitialDepths[i]))
+        self.hiddenBias = [nn.Parameter(1, depth) for depth in self.InitialDepths]
+        self.hiddenBias.remove(self.hiddenBias[0])
+        
+        self.finalDepths = [self.HiddenLayerSize, 300, 5]
+        self.finalWeights = []
+        for i in range(1, len(self.finalDepths)):
+            self.finalWeights.append(nn.Parameter(self.finalDepths[i - 1], self.finalDepths[i]))
+        self.finalBias = [nn.Parameter(1, depth) for depth in self.finalDepths]
+        self.finalBias.remove(self.finalBias[0])
+
+
 
     def run(self, xs):
         """
@@ -269,6 +296,32 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        #initial
+        x = xs[0]
+        for i in range(len(self.InitialDepths) - 1):
+            xw = nn.Linear(x, self.InitialWeights[i])
+            withBias = nn.AddBias(xw, self.initialBias[i])
+            x = nn.ReLU(withBias)
+        #recurrent
+        h = x
+        for i in range(1, len(xs)):
+            x = xs[i]
+            for j in range(len(self.InitialDepths) - 1):
+                xw = nn.Add(nn.Linear(x, self.InitialWeights[j]), nn.Linear(h, self.HiddenWeights[j]))
+                withBias = nn.AddBias(xw, self.hiddenBias[j])
+                x = nn.ReLU(withBias)
+            h = nn.ReLU(x)
+        #final
+        x = h
+        for i in range(len(self.finalDepths) - 1):
+            xw = nn.Linear(x, self.finalWeights[i])
+            withBias = nn.AddBias(xw, self.finalBias[i])
+            x = withBias
+            if i != len(self.finalDepths) - 2:
+                x = nn.ReLU(withBias)
+
+        return x
+        
     def get_loss(self, xs, y):
         """
         Computes the loss for a batch of examples.
@@ -284,9 +337,35 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        predicted = self.run(xs)
+        return nn.SoftmaxLoss(predicted, y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        import math
+        parameters = []
+        for bias in self.initialBias:
+            parameters.append(bias)
+        for bias in self.hiddenBias:
+            parameters.append(bias) 
+        for bias in self.finalBias:
+            parameters.append(bias) 
+
+        for weight in self.InitialWeights:
+            parameters.append(weight)
+        for weight in self.HiddenWeights:
+            parameters.append(weight)
+        for weight in self.finalWeights:
+            parameters.append(weight)    
+        
+        accuracy = 0
+        while accuracy < 89:
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                Gradient = nn.gradients(loss, parameters)
+                for i in range(len(parameters)):
+                    parameters[i].update(Gradient[i], self.learningRate)
+            accuracy = dataset.get_validation_accuracy()
